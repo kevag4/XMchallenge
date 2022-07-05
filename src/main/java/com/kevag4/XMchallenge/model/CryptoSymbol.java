@@ -4,5 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 @JsonFormat(shape = JsonFormat.Shape.STRING)
 public enum CryptoSymbol {
-    BTC, DOGE, ETH, LTC, XRP
+    BTC, 
+    DOGE, 
+    ETH, 
+    LTC,
+    XRP
 }

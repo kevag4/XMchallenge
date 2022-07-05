@@ -5,18 +5,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.kevag4.XMchallenge.model.BTCCrypto;
@@ -85,10 +87,15 @@ public class CryptoServiceImpl implements CryptoService {
     }
 
     @Override
-    public List<Crypto> findAll() {
-        Iterable<Crypto> users = new ArrayList<Crypto>();
-        users = cryptoRepository.findAll();
-        return IterableUtils.toList(users);
+    public Page<Crypto> findAll(int page, int size) {
+        Pageable paging = PageRequest.of(page, size);
+        Page<Crypto> pageCryptos = cryptoRepository.findAll(paging);
+        return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {};
     }
 
+    @Override
+    public List<Crypto> retrieveCryptoDetails(CryptoSymbol symbol) {
+        logger.info(cryptoRepository.retrieveCryptoDetails("BTC").toString());
+        return null;
+    }
 }

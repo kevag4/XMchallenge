@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+
 import com.kevag4.XMchallenge.model.Crypto;
 import com.kevag4.XMchallenge.model.CryptoSymbol;
 
@@ -31,8 +33,16 @@ public interface CryptoService {
 
     /**
      * Get all cryptos
-     *
+     * @param page
+     * @param size
      * @return all cryptos
      */
-    public List<Crypto> findAll();
+    public Page<Crypto> findAll(int page, int size);
+
+    /**
+     * Retrive all cryptos of a given type with details
+     * @param symbol
+     * @return return the oldest/newest/min/max values for a requested crypto
+     */
+    public List<Crypto> retrieveCryptoDetails(CryptoSymbol symbol);
 }
