@@ -45,7 +45,7 @@ public class XMchallengeApplication implements CommandLineRunner {
     public void run(String... args) throws Exception {
         for (CryptoSymbol cryptoSymbol : CryptoSymbol.values()) {
             try {
-                Resource resource = new ClassPathResource(cryptoSymbol + "_values.csv");
+                Resource resource = new ClassPathResource(cryptoSymbol.name() + "_values.csv");
                 File file = resource.getFile();
                 if (file.exists()) {
                     logger.info("Populating database from file: " + file.getName());

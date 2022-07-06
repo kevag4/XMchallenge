@@ -5,10 +5,12 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 
 import com.kevag4.XMchallenge.model.Crypto;
+import com.kevag4.XMchallenge.model.CryptoDetails;
 import com.kevag4.XMchallenge.model.CryptoSymbol;
 
 public interface CryptoService {
@@ -40,9 +42,24 @@ public interface CryptoService {
     public Page<Crypto> findAll(int page, int size);
 
     /**
-     * Retrive all cryptos of a given type with details
+     * Calculates oldest/newest/min/max for each crypto
      * @param symbol
      * @return return the oldest/newest/min/max values for a requested crypto
      */
-    public List<Crypto> retrieveCryptoDetails(CryptoSymbol symbol);
+    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol);
+
+    /**
+     * Get all cryptos Sorted By Price Against Normalized Range Desc
+     * @param page
+     * @param size
+     * @return a descending sorted list of all the cryptos, comparing the normalized range ((max-min)/min)
+     */
+    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size);
+
+    /**
+     * Get crypto with the highest normalized range for a specific day
+     * @param day
+     * @return the symbol of the crypto with the highest normalized range for a specific day together with the norm range
+     */
+    public Map<String, Object> getCryptoWithHighestNormalizedRangeForADay(String day);
 }

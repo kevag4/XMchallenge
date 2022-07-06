@@ -1,5 +1,6 @@
 package com.kevag4.XMchallenge.controller;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -8,13 +9,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.kevag4.XMchallenge.model.Crypto;
+import com.kevag4.XMchallenge.model.CryptoDetails;
 import com.kevag4.XMchallenge.model.CryptoSymbol;
 import com.kevag4.XMchallenge.service.CryptoServiceImpl;
+
+import io.swagger.v3.oas.annotations.Operation;
 
 @RestController
 @RequestMapping(path = "/api/cryptos")
@@ -36,11 +42,15 @@ public class CryptoRecommendationController {
      * @returns information of the total pages, current page and the cryptos in the
      *          current page
      */
+    @Operation(summary = "Get all Cryptos")
     @GetMapping
-    public ResponseEntity<Page<Crypto>> getAllCryptos(Pageable page) {
+    public ResponseEntity<Page<Crypto>> getAllCryptos(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         try {
-            return new ResponseEntity<>(cryptoService.findAll(page.getPageNumber(), page.getPageSize()), HttpStatus.OK);
+            logger.trace("Received request for getAllCryptos()");
+            return new ResponseEntity<>(cryptoService.findAll(page, size), HttpStatus.OK);
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -49,11 +59,55 @@ public class CryptoRecommendationController {
      * Get Crypto Details by type.
      *
      * @param userId
-     * @returns Json String with User details
+     * @returns endpoint that returns the oldest/newest/min/max values for a requested crypto
      */
+    @Operation(summary = "Get oldest/newest/min/max values for a requested crypto")
     @GetMapping("/getCryptoDetails/{symbol}")
-    public ResponseEntity<List<Crypto>> getCryptoDetails(@PathVariable("symbol") String symbol) {
-        return new ResponseEntity<>(cryptoService.retrieveCryptoDetails(CryptoSymbol.valueOf(symbol)), HttpStatus.OK);
+    public ResponseEntity<CryptoDetails> getCryptoDetails(@PathVariable("symbol") @Validated CryptoSymbol symbol) {
+        try {
+            logger.trace("Received request for getAllCryptos()");
+            return new ResponseEntity<>(cryptoService.retrieveCryptoDetails(symbol), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
+    /**
+     * Get all Cryptos.
+     *
+     * @param page
+     * @param size
+     * @returns endpoint that returns a descending sorted list of all the cryptos, comparing the normalized range ((max-min)/min)
+    */
+    @Operation(summary = "Get a descending sorted list of all the cryptos, comparing the normalized range ((max-min)/min)")
+    @GetMapping("/getAllCryptosSortedByPriceAgainstNormalizedRangeDesc")
+    public ResponseEntity<Page<Crypto>> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            logger.trace("Received request for getAllCryptos()");
+            return new ResponseEntity<>(cryptoService.getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(page, size), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get crypto with the highest normalized range for a specific day.
+     *
+     * @param day
+     * @returns endpoint that will return the crypto with the highest normalized range for a specific day
+    */
+    @Operation(summary = "Get crypto with the highest normalized range for a specific day (yyyy-MM-dd).")
+    @GetMapping("/getCryptoWithHighestNormalizedRangeForADay")
+    public ResponseEntity<Map<String, Object>> getCryptoWithHighestNormalizedRangeForADay (@RequestParam("day") @DateTimeFormat(pattern="yyyy-MM-dd") String day) {
+        try {
+            logger.trace("Received request for getAllCryptos()");
+            return new ResponseEntity<>(cryptoService.getCryptoWithHighestNormalizedRangeForADay(day), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

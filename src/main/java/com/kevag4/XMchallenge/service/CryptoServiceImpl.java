@@ -7,7 +7,10 @@ import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -19,10 +22,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import com.kevag4.XMchallenge.model.BTCCrypto;
 import com.kevag4.XMchallenge.model.Crypto;
+import com.kevag4.XMchallenge.model.CryptoDetails;
 import com.kevag4.XMchallenge.model.CryptoSymbol;
 import com.kevag4.XMchallenge.model.DOGECrypto;
 import com.kevag4.XMchallenge.model.ETHCrypto;
@@ -43,6 +48,7 @@ public class CryptoServiceImpl implements CryptoService {
 
     @Override
     public Crypto createCrypto(Instant timestamp, CryptoSymbol symbol, BigDecimal price) {
+        // depending on the crypto symbol the correct instance is created.
         Crypto crypto = null;
         switch (symbol) {
             case BTC:
@@ -63,6 +69,8 @@ public class CryptoServiceImpl implements CryptoService {
             default:
                 break;
         }
+        logger.trace("Crypto with symbol: " + symbol.name() + " created.");
+        logger.debug("Crypto: " + crypto.toString() + ", with symbol: " + crypto.getCryptoSymbol());
         return crypto;
     }
 
@@ -71,14 +79,17 @@ public class CryptoServiceImpl implements CryptoService {
         try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(file, "UTF-8"));
                 CSVParser csvParser = new CSVParser(fileReader,
                         CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());) {
+            
             List<Crypto> cryptos = new ArrayList<Crypto>();
             Iterable<CSVRecord> csvRecords = csvParser.getRecords();
+
             for (CSVRecord csvRecord : csvRecords) {
                 Crypto crypto = createCrypto(Instant.ofEpochMilli(Long.parseLong(csvRecord.get("timestamp"))),
                         CryptoSymbol.valueOf(csvRecord.get("symbol")),
                         new BigDecimal(csvRecord.get("price")));
                 cryptos.add(crypto);
             }
+            logger.trace("Finished parsing csv, saving in database..");
             cryptoRepository.saveAll(cryptos);
             return cryptos;
         } catch (IOException e) {
@@ -90,12 +101,62 @@ public class CryptoServiceImpl implements CryptoService {
     public Page<Crypto> findAll(int page, int size) {
         Pageable paging = PageRequest.of(page, size);
         Page<Crypto> pageCryptos = cryptoRepository.findAll(paging);
-        return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {};
+        logger.trace("Fetched page with cryptos inside findAll()");
+
+        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo symbol in the serialization
+        return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {
+        };
     }
 
     @Override
-    public List<Crypto> retrieveCryptoDetails(CryptoSymbol symbol) {
-        logger.info(cryptoRepository.retrieveCryptoDetails("BTC").toString());
-        return null;
+    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol) {
+        Crypto olderEntry = cryptoRepository.retrieveOlderValuesBySymbol(symbol.name());
+        Map<String, Object> olderValue = new HashMap<>();
+        olderValue.put("price", olderEntry.getPrice());
+        olderValue.put("timestamp", olderEntry.getTimestamp());
+        Crypto newerEntry = cryptoRepository.retrieveNewerValuesBySymbol(symbol.name());
+        Map<String, Object> newerValue = new HashMap<>();
+        newerValue.put("price", newerEntry.getPrice());
+        newerValue.put("timestamp", newerEntry.getTimestamp());
+
+        logger.trace("Gathered all nessacary info, ready to build the CryptoDetails answer.");
+        return CryptoDetails.builder().symbol(symbol)
+                .min_value_price(cryptoRepository.min(symbol.name()))
+                .max_value_price(cryptoRepository.max(symbol.name()))
+                .older_value(olderValue)
+                .newerValue(newerValue)
+                .build();
+    }
+
+    @Override
+    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size) {
+        Pageable paging = PageRequest.of(page, size);
+        Page<Crypto> pageCryptos = cryptoRepository.getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(paging);
+        logger.trace("Fetched sorted page with cryptos inside getAllCryptosSortedByPriceAgainstNormalizedRangeDesc()");
+
+        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo symbol in the serialization
+        return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {
+        };
+    }
+
+    @Override
+    public Map<String, Object> getCryptoWithHighestNormalizedRangeForADay(String day) {
+        Map<String, Object> result = new HashMap<>();
+        BigDecimal largestNormRange = BigDecimal.ZERO;
+        CryptoSymbol symbOfLargerNorm = null;
+        // iterate over norm ranges of all cryptos and keep the one with the highest
+        for (CryptoSymbol symbol : CryptoSymbol.values()) {
+            BigDecimal tempNormRange = cryptoRepository.getCryptoWithHighestNormalizedRangeForADay(symbol.name(), day);
+            logger.info("symbol: " + symbol.name() + ", tempNormRange: " + tempNormRange + ", largestNormRange: " + largestNormRange);
+            if (tempNormRange != null && tempNormRange.compareTo(largestNormRange) == 1) {
+                largestNormRange = tempNormRange;
+                symbOfLargerNorm = symbol;
+            }
+        }
+        logger.trace("Gathered all information, preparing the result");
+        result.put("crypto_symbol", symbOfLargerNorm);
+        result.put("normalization_range", largestNormRange);
+        result.put("day", day);
+        return result;
     }
 }
