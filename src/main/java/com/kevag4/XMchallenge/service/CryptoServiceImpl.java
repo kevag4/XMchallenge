@@ -6,8 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import com.kevag4.XMchallenge.model.BTCCrypto;
@@ -37,6 +36,8 @@ import com.kevag4.XMchallenge.repository.CryptoRepository;
 
 @Service
 public class CryptoServiceImpl implements CryptoService {
+
+    private static final String FROM_FILTER_DATE = "2022-01-01";
 
     Logger logger = LoggerFactory.getLogger(CryptoServiceImpl.class);
     private CryptoRepository cryptoRepository;
@@ -79,7 +80,7 @@ public class CryptoServiceImpl implements CryptoService {
         try (BufferedReader fileReader = new BufferedReader(new InputStreamReader(file, "UTF-8"));
                 CSVParser csvParser = new CSVParser(fileReader,
                         CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());) {
-            
+
             List<Crypto> cryptos = new ArrayList<Crypto>();
             Iterable<CSVRecord> csvRecords = csvParser.getRecords();
 
@@ -103,38 +104,49 @@ public class CryptoServiceImpl implements CryptoService {
         Page<Crypto> pageCryptos = cryptoRepository.findAll(paging);
         logger.trace("Fetched page with cryptos inside findAll()");
 
-        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo symbol in the serialization
+        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo
+        // symbol in the serialization
         return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {
         };
     }
 
     @Override
-    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol) {
-        Crypto olderEntry = cryptoRepository.retrieveOlderValuesBySymbol(symbol.name());
+    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol, String fromDate, String toDate) {
+        String fd = (fromDate == null || fromDate.isEmpty()) ? FROM_FILTER_DATE : fromDate;
+        String td = (toDate == null || toDate.isEmpty()) ? LocalDate.now().toString() : toDate;
+
+        Crypto olderEntry = cryptoRepository.retrieveOlderValuesBySymbol(symbol.name(), fd, td);
         Map<String, Object> olderValue = new HashMap<>();
         olderValue.put("price", olderEntry.getPrice());
         olderValue.put("timestamp", olderEntry.getTimestamp());
-        Crypto newerEntry = cryptoRepository.retrieveNewerValuesBySymbol(symbol.name());
+        Crypto newerEntry = cryptoRepository.retrieveNewerValuesBySymbol(symbol.name(), fd, td);
         Map<String, Object> newerValue = new HashMap<>();
         newerValue.put("price", newerEntry.getPrice());
         newerValue.put("timestamp", newerEntry.getTimestamp());
 
         logger.trace("Gathered all nessacary info, ready to build the CryptoDetails answer.");
         return CryptoDetails.builder().symbol(symbol)
-                .min_value_price(cryptoRepository.min(symbol.name()))
-                .max_value_price(cryptoRepository.max(symbol.name()))
+                .min_value_price(cryptoRepository.min(symbol.name(), fd, td))
+                .max_value_price(cryptoRepository.max(symbol.name(), fd, td))
                 .older_value(olderValue)
                 .newerValue(newerValue)
                 .build();
     }
 
     @Override
-    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size) {
+    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size, String fromDate,
+            String toDate) {
         Pageable paging = PageRequest.of(page, size);
-        Page<Crypto> pageCryptos = cryptoRepository.getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(paging);
+
+        // if user has not defined filtering dates, choose beginning of 2022 and/or now date
+        Page<Crypto> pageCryptos = cryptoRepository.getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(
+                (fromDate == null || fromDate.isEmpty()) ? FROM_FILTER_DATE : fromDate,
+                (toDate == null || toDate.isEmpty()) ? LocalDate.now().toString() : toDate,
+                paging);
         logger.trace("Fetched sorted page with cryptos inside getAllCryptosSortedByPriceAgainstNormalizedRangeDesc()");
 
-        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo symbol in the serialization
+        // return new PageImpl so to trick the Type erasure and include JsonTypeInfo
+        // symbol in the serialization
         return new PageImpl<>(pageCryptos.getContent(), paging, pageCryptos.getTotalElements()) {
         };
     }
@@ -146,8 +158,9 @@ public class CryptoServiceImpl implements CryptoService {
         CryptoSymbol symbOfLargerNorm = null;
         // iterate over norm ranges of all cryptos and keep the one with the highest
         for (CryptoSymbol symbol : CryptoSymbol.values()) {
-            BigDecimal tempNormRange = cryptoRepository.getCryptoWithHighestNormalizedRangeForADay(symbol.name(), day);
-            logger.info("symbol: " + symbol.name() + ", tempNormRange: " + tempNormRange + ", largestNormRange: " + largestNormRange);
+            BigDecimal tempNormRange = cryptoRepository.getCryptoWithHighestNormalizedRangeForOneDay(symbol.name(), day);
+            logger.debug("symbol: " + symbol.name() + ", tempNormRange: " + tempNormRange + ", largestNormRange: "
+                    + largestNormRange);
             if (tempNormRange != null && tempNormRange.compareTo(largestNormRange) == 1) {
                 largestNormRange = tempNormRange;
                 symbOfLargerNorm = symbol;

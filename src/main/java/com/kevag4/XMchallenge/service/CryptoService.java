@@ -46,15 +46,16 @@ public interface CryptoService {
      * @param symbol
      * @return return the oldest/newest/min/max values for a requested crypto
      */
-    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol);
+    public CryptoDetails retrieveCryptoDetails(CryptoSymbol symbol, String fromDate, String toDate);
 
     /**
      * Get all cryptos Sorted By Price Against Normalized Range Desc
+     * Optional filtering for fetching results for specific month and year
      * @param page
      * @param size
      * @return a descending sorted list of all the cryptos, comparing the normalized range ((max-min)/min)
      */
-    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size);
+    public Page<Crypto> getAllCryptosSortedByPriceAgainstNormalizedRangeDesc(int page, int size, String fromDate, String toDate);
 
     /**
      * Get crypto with the highest normalized range for a specific day
