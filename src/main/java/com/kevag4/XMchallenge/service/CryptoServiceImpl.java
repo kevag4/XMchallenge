@@ -117,12 +117,12 @@ public class CryptoServiceImpl implements CryptoService {
 
         Crypto olderEntry = cryptoRepository.retrieveOlderValuesBySymbol(symbol.name(), fd, td);
         Map<String, Object> olderValue = new HashMap<>();
-        olderValue.put("price", olderEntry.getPrice());
-        olderValue.put("timestamp", olderEntry.getTimestamp());
+        olderValue.put("price", olderEntry == null ? "" : olderEntry.getPrice());
+        olderValue.put("timestamp", olderEntry == null ? "" : olderEntry.getTimestamp());
         Crypto newerEntry = cryptoRepository.retrieveNewerValuesBySymbol(symbol.name(), fd, td);
         Map<String, Object> newerValue = new HashMap<>();
-        newerValue.put("price", newerEntry.getPrice());
-        newerValue.put("timestamp", newerEntry.getTimestamp());
+        newerValue.put("price", newerEntry == null ? "" : newerEntry.getPrice());
+        newerValue.put("timestamp",  newerEntry == null ? "" : newerEntry.getTimestamp());
 
         logger.trace("Gathered all nessacary info, ready to build the CryptoDetails answer.");
         return CryptoDetails.builder().symbol(symbol)

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.support.NullValue;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -190,8 +191,11 @@ class XMchallengeApplicationTests {
 				.param("fromDate", "2022-01-10")		
 				.param("toDate", "2022-01-06"));
 
-		response.andExpect(status().isInternalServerError())
-				.andDo(print());
+		response.andExpect(status().isOk())
+				.andDo(print())
+				.andExpect(jsonPath("$.symbol", is(CryptoSymbol.BTC.name())))
+				.andExpect(jsonPath("$.min_value_price", is(nullValue())))
+				.andExpect(jsonPath("$.max_value_price", is(nullValue())));
 	}
 
 	// Get first page with 100 cryptos and validate the total number, pages and
