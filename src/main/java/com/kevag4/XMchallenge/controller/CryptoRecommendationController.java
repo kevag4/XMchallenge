@@ -159,7 +159,7 @@ public class CryptoRecommendationController {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> return500(MethodArgumentTypeMismatchException ex) {
         Map<String, Object> result = new HashMap<>();
-        result.put("error_message", ex.getMessage());
+        result.put("error_message", "Param value NOT supported.");
         return new ResponseEntity<>(result, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
