@@ -19,5 +19,5 @@ public class CryptoDetails {
     private BigDecimal max_value_price;
 
     private Map<String, Object> older_value;
-    private Map<String, Object> newerValue;
+    private Map<String, Object> newer_value;
 }

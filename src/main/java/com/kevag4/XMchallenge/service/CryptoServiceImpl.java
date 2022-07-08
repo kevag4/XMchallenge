@@ -129,7 +129,7 @@ public class CryptoServiceImpl implements CryptoService {
                 .min_value_price(cryptoRepository.min(symbol.name(), fd, td))
                 .max_value_price(cryptoRepository.max(symbol.name(), fd, td))
                 .older_value(olderValue)
-                .newerValue(newerValue)
+                .newer_value(newerValue)
                 .build();
     }
 
