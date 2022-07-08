@@ -3,7 +3,9 @@ package com.kevag4.XMchallenge;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.TimeZone;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.ServletContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +66,12 @@ public class XMchallengeApplication implements CommandLineRunner {
 
     }
 
+    @PostConstruct
+    public void init(){
+      // Since we are manipulating timestamps it is safe to set a timezone
+      TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+    }
+    
     /**
      * Adding OpenAPI Bean for swagger UI
      */
