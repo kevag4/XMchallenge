@@ -150,7 +150,7 @@ public class CryptoRecommendationController {
         return new ResponseEntity<>(result, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-        /**
+    /**
      * Exception handler if MethodArgumentTypeMismatchException is thrown in this Controller
      *
      * @param ex exception
