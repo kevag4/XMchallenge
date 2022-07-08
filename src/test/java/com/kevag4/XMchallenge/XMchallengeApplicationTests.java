@@ -73,12 +73,12 @@ class XMchallengeApplicationTests {
 	public void getCryptoWithHighestNormalizedRangeForADay_Positive() throws Exception {
 
 		ResultActions responseETH = mockMvc.perform(get("/api/cryptos/getCryptoWithHighestNormalizedRangeForADay")
-				.param("day", "2022-01-29"));
+				.param("day", "2022-01-28"));
 
 		responseETH.andExpect(status().isOk())
 				.andDo(print())
-				.andExpect(jsonPath("$.normalization_range", is(0.02292)))
-				.andExpect(jsonPath("$.day", is("2022-01-29")))
+				.andExpect(jsonPath("$.normalization_range", is(0.063119)))
+				.andExpect(jsonPath("$.day", is("2022-01-28")))
 				.andExpect(jsonPath("$.crypto_symbol", is("ETH")));
 
 		ResultActions responseXRP = mockMvc.perform(get("/api/cryptos/getCryptoWithHighestNormalizedRangeForADay")
@@ -167,7 +167,6 @@ class XMchallengeApplicationTests {
 				.andDo(print())
 				.andExpect(jsonPath("$.symbol", is(CryptoSymbol.ETH.name())))
 				.andExpect(jsonPath("$.min_value_price", is(3751.99)))
-				.andExpect(jsonPath("$.max_value_price", is(3821.02)))
 				.andExpect(jsonPath("$.older_value", is(olderValue)))
 				.andExpect(jsonPath("$.newer_value", is(newerValue)));
 	}
@@ -232,14 +231,14 @@ class XMchallengeApplicationTests {
 		ResultActions response = mockMvc.perform(get("/api/cryptos/getAllCryptosSortedByPriceAgainstNormalizedRangeDesc")
 				.param("page", "0")
 				.param("size", "100")
-				.param("fromDate", "2022-01-12")		
+				.param("fromDate", "2022-01-13")		
 				.param("toDate", "2022-01-18"));
 
 		response.andExpect(status().isOk())
 				.andDo(print())
 				.andExpect(jsonPath("$.content", isA(ArrayList.class)))
-				.andExpect(jsonPath("$.content", hasSize(85)))
-				.andExpect(jsonPath("$.totalElements", is(85)))
+				.andExpect(jsonPath("$.content", hasSize(76)))
+				.andExpect(jsonPath("$.totalElements", is(76)))
 				.andExpect(jsonPath("$.totalPages", is(1)))
 				.andExpect(jsonPath("$.content[0].symbol", is(CryptoSymbol.BTC.name())))
 				.andExpect(jsonPath("$.content[0].price", is(44154.52)))
